@@ -532,8 +532,8 @@ namespace Catch {
     struct StreamEndStop {
         std::string operator+() const;
     };
-    template<typename T>
-    T const& operator + ( T const& value, StreamEndStop ) {
+    template<typename CellType>
+    CellType const& operator + ( CellType const& value, StreamEndStop ) {
         return value;
     }
 }
@@ -919,7 +919,7 @@ constexpr auto operator "" _catch_sr( char const* rawChars, std::size_t size ) n
 #include <type_traits>
 
 namespace Catch {
-    template<typename T>
+    template<typename CellType>
     struct always_false : std::false_type {};
 
     template <typename> struct true_given : std::true_type {};
@@ -930,7 +930,7 @@ namespace Catch {
         std::false_type static test(...);
     };
 
-    template <typename T>
+    template <typename CellType>
     struct is_callable;
 
     template <typename Fun, typename... Args>
@@ -1444,8 +1444,8 @@ namespace Catch {
 
         auto str() const -> std::string;
 
-        template<typename T>
-        auto operator << ( T const& value ) -> ReusableStringStream& {
+        template<typename CellType>
+        auto operator << ( CellType const& value ) -> ReusableStringStream& {
             *m_oss << value;
             return *this;
         }
@@ -1553,12 +1553,12 @@ namespace Catch {
 
         std::string rawMemoryToString( const void *object, std::size_t size );
 
-        template<typename T>
-        std::string rawMemoryToString( const T& object ) {
+        template<typename CellType>
+        std::string rawMemoryToString( const CellType& object ) {
           return rawMemoryToString( &object, sizeof(object) );
         }
 
-        template<typename T>
+        template<typename CellType>
         class IsStreamInsertable {
             template<typename Stream, typename U>
             static auto test(int)
@@ -1568,29 +1568,29 @@ namespace Catch {
             static auto test(...)->std::false_type;
 
         public:
-            static const bool value = decltype(test<std::ostream, const T&>(0))::value;
+            static const bool value = decltype(test<std::ostream, const CellType&>(0))::value;
         };
 
         template<typename E>
         std::string convertUnknownEnumToString( E e );
 
-        template<typename T>
+        template<typename CellType>
         typename std::enable_if<
-            !std::is_enum<T>::value && !std::is_base_of<std::exception, T>::value,
-        std::string>::type convertUnstreamable( T const& ) {
+            !std::is_enum<CellType>::value && !std::is_base_of<std::exception, CellType>::value,
+        std::string>::type convertUnstreamable( CellType const& ) {
             return Detail::unprintableString;
         }
-        template<typename T>
+        template<typename CellType>
         typename std::enable_if<
-            !std::is_enum<T>::value && std::is_base_of<std::exception, T>::value,
-         std::string>::type convertUnstreamable(T const& ex) {
+            !std::is_enum<CellType>::value && std::is_base_of<std::exception, CellType>::value,
+         std::string>::type convertUnstreamable(CellType const& ex) {
             return ex.what();
         }
 
-        template<typename T>
+        template<typename CellType>
         typename std::enable_if<
-            std::is_enum<T>::value
-        , std::string>::type convertUnstreamable( T const& value ) {
+            std::is_enum<CellType>::value
+        , std::string>::type convertUnstreamable( CellType const& value ) {
             return convertUnknownEnumToString( value );
         }
 
@@ -1609,9 +1609,9 @@ namespace Catch {
     } // namespace Detail
 
     // If we decide for C++14, change these to enable_if_ts
-    template <typename T, typename = void>
+    template <typename CellType, typename = void>
     struct StringMaker {
-        template <typename Fake = T>
+        template <typename Fake = CellType>
         static
         typename std::enable_if<::Catch::Detail::IsStreamInsertable<Fake>::value, std::string>::type
             convert(const Fake& value) {
@@ -1622,7 +1622,7 @@ namespace Catch {
                 return rss.str();
         }
 
-        template <typename Fake = T>
+        template <typename Fake = CellType>
         static
         typename std::enable_if<!::Catch::Detail::IsStreamInsertable<Fake>::value, std::string>::type
             convert( const Fake& value ) {
@@ -1638,9 +1638,9 @@ namespace Catch {
 
         // This function dispatches all stringification requests inside of Catch.
         // Should be preferably called fully qualified, like ::Catch::Detail::stringify
-        template <typename T>
-        std::string stringify(const T& e) {
-            return ::Catch::StringMaker<typename std::remove_cv<typename std::remove_reference<T>::type>::type>::convert(e);
+        template <typename CellType>
+        std::string stringify(const CellType& e) {
+            return ::Catch::StringMaker<typename std::remove_cv<typename std::remove_reference<CellType>::type>::type>::convert(e);
         }
 
         template<typename E>
@@ -1790,8 +1790,8 @@ namespace Catch {
         static int precision;
     };
 
-    template <typename T>
-    struct StringMaker<T*> {
+    template <typename CellType>
+    struct StringMaker<CellType*> {
         template <typename U>
         static std::string convert(U* p) {
             if (p) {
@@ -1992,17 +1992,17 @@ namespace Catch {
             using type = void;
         };
 
-        template <typename T, typename = void>
+        template <typename CellType, typename = void>
         struct is_range_impl : std::false_type {
         };
 
-        template <typename T>
-        struct is_range_impl<T, typename void_type<decltype(begin(std::declval<T>()))>::type> : std::true_type {
+        template <typename CellType>
+        struct is_range_impl<CellType, typename void_type<decltype(begin(std::declval<CellType>()))>::type> : std::true_type {
         };
     } // namespace detail
 
-    template <typename T>
-    struct is_range : detail::is_range_impl<T> {
+    template <typename CellType>
+    struct is_range : detail::is_range_impl<CellType> {
     };
 
 #if defined(_MANAGED) // Managed types are never ranges
@@ -2041,9 +2041,9 @@ namespace Catch {
         }
     };
 
-    template <typename T, int SZ>
-    struct StringMaker<T[SZ]> {
-        static std::string convert(T const(&arr)[SZ]) {
+    template <typename CellType, int SZ>
+    struct StringMaker<CellType[SZ]> {
+        static std::string convert(CellType const(&arr)[SZ]) {
             return rangeToString(arr);
         }
     };
@@ -2237,58 +2237,58 @@ namespace Catch {
             m_rhs( rhs )
         {}
 
-        template<typename T>
-        auto operator && ( T ) const -> BinaryExpr<LhsT, RhsT const&> const {
-            static_assert(always_false<T>::value,
+        template<typename CellType>
+        auto operator && ( CellType ) const -> BinaryExpr<LhsT, RhsT const&> const {
+            static_assert(always_false<CellType>::value,
             "chained comparisons are not supported inside assertions, "
             "wrap the expression inside parentheses, or decompose it");
         }
 
-        template<typename T>
-        auto operator || ( T ) const -> BinaryExpr<LhsT, RhsT const&> const {
-            static_assert(always_false<T>::value,
+        template<typename CellType>
+        auto operator || ( CellType ) const -> BinaryExpr<LhsT, RhsT const&> const {
+            static_assert(always_false<CellType>::value,
             "chained comparisons are not supported inside assertions, "
             "wrap the expression inside parentheses, or decompose it");
         }
 
-        template<typename T>
-        auto operator == ( T ) const -> BinaryExpr<LhsT, RhsT const&> const {
-            static_assert(always_false<T>::value,
+        template<typename CellType>
+        auto operator == ( CellType ) const -> BinaryExpr<LhsT, RhsT const&> const {
+            static_assert(always_false<CellType>::value,
             "chained comparisons are not supported inside assertions, "
             "wrap the expression inside parentheses, or decompose it");
         }
 
-        template<typename T>
-        auto operator != ( T ) const -> BinaryExpr<LhsT, RhsT const&> const {
-            static_assert(always_false<T>::value,
+        template<typename CellType>
+        auto operator != ( CellType ) const -> BinaryExpr<LhsT, RhsT const&> const {
+            static_assert(always_false<CellType>::value,
             "chained comparisons are not supported inside assertions, "
             "wrap the expression inside parentheses, or decompose it");
         }
 
-        template<typename T>
-        auto operator > ( T ) const -> BinaryExpr<LhsT, RhsT const&> const {
-            static_assert(always_false<T>::value,
+        template<typename CellType>
+        auto operator > ( CellType ) const -> BinaryExpr<LhsT, RhsT const&> const {
+            static_assert(always_false<CellType>::value,
             "chained comparisons are not supported inside assertions, "
             "wrap the expression inside parentheses, or decompose it");
         }
 
-        template<typename T>
-        auto operator < ( T ) const -> BinaryExpr<LhsT, RhsT const&> const {
-            static_assert(always_false<T>::value,
+        template<typename CellType>
+        auto operator < ( CellType ) const -> BinaryExpr<LhsT, RhsT const&> const {
+            static_assert(always_false<CellType>::value,
             "chained comparisons are not supported inside assertions, "
             "wrap the expression inside parentheses, or decompose it");
         }
 
-        template<typename T>
-        auto operator >= ( T ) const -> BinaryExpr<LhsT, RhsT const&> const {
-            static_assert(always_false<T>::value,
+        template<typename CellType>
+        auto operator >= ( CellType ) const -> BinaryExpr<LhsT, RhsT const&> const {
+            static_assert(always_false<CellType>::value,
             "chained comparisons are not supported inside assertions, "
             "wrap the expression inside parentheses, or decompose it");
         }
 
-        template<typename T>
-        auto operator <= ( T ) const -> BinaryExpr<LhsT, RhsT const&> const {
-            static_assert(always_false<T>::value,
+        template<typename CellType>
+        auto operator <= ( CellType ) const -> BinaryExpr<LhsT, RhsT const&> const {
+            static_assert(always_false<CellType>::value,
             "chained comparisons are not supported inside assertions, "
             "wrap the expression inside parentheses, or decompose it");
         }
@@ -2312,25 +2312,25 @@ namespace Catch {
     // Specialised comparison functions to handle equality comparisons between ints and pointers (NULL deduces as an int)
     template<typename LhsT, typename RhsT>
     auto compareEqual( LhsT const& lhs, RhsT const& rhs ) -> bool { return static_cast<bool>(lhs == rhs); }
-    template<typename T>
-    auto compareEqual( T* const& lhs, int rhs ) -> bool { return lhs == reinterpret_cast<void const*>( rhs ); }
-    template<typename T>
-    auto compareEqual( T* const& lhs, long rhs ) -> bool { return lhs == reinterpret_cast<void const*>( rhs ); }
-    template<typename T>
-    auto compareEqual( int lhs, T* const& rhs ) -> bool { return reinterpret_cast<void const*>( lhs ) == rhs; }
-    template<typename T>
-    auto compareEqual( long lhs, T* const& rhs ) -> bool { return reinterpret_cast<void const*>( lhs ) == rhs; }
+    template<typename CellType>
+    auto compareEqual( CellType* const& lhs, int rhs ) -> bool { return lhs == reinterpret_cast<void const*>( rhs ); }
+    template<typename CellType>
+    auto compareEqual( CellType* const& lhs, long rhs ) -> bool { return lhs == reinterpret_cast<void const*>( rhs ); }
+    template<typename CellType>
+    auto compareEqual( int lhs, CellType* const& rhs ) -> bool { return reinterpret_cast<void const*>( lhs ) == rhs; }
+    template<typename CellType>
+    auto compareEqual( long lhs, CellType* const& rhs ) -> bool { return reinterpret_cast<void const*>( lhs ) == rhs; }
 
     template<typename LhsT, typename RhsT>
     auto compareNotEqual( LhsT const& lhs, RhsT&& rhs ) -> bool { return static_cast<bool>(lhs != rhs); }
-    template<typename T>
-    auto compareNotEqual( T* const& lhs, int rhs ) -> bool { return lhs != reinterpret_cast<void const*>( rhs ); }
-    template<typename T>
-    auto compareNotEqual( T* const& lhs, long rhs ) -> bool { return lhs != reinterpret_cast<void const*>( rhs ); }
-    template<typename T>
-    auto compareNotEqual( int lhs, T* const& rhs ) -> bool { return reinterpret_cast<void const*>( lhs ) != rhs; }
-    template<typename T>
-    auto compareNotEqual( long lhs, T* const& rhs ) -> bool { return reinterpret_cast<void const*>( lhs ) != rhs; }
+    template<typename CellType>
+    auto compareNotEqual( CellType* const& lhs, int rhs ) -> bool { return lhs != reinterpret_cast<void const*>( rhs ); }
+    template<typename CellType>
+    auto compareNotEqual( CellType* const& lhs, long rhs ) -> bool { return lhs != reinterpret_cast<void const*>( rhs ); }
+    template<typename CellType>
+    auto compareNotEqual( int lhs, CellType* const& rhs ) -> bool { return reinterpret_cast<void const*>( lhs ) != rhs; }
+    template<typename CellType>
+    auto compareNotEqual( long lhs, CellType* const& rhs ) -> bool { return reinterpret_cast<void const*>( lhs ) != rhs; }
 
     template<typename LhsT>
     class ExprLhs {
@@ -2404,15 +2404,15 @@ namespace Catch {
 
     void handleExpression( ITransientExpression const& expr );
 
-    template<typename T>
-    void handleExpression( ExprLhs<T> const& expr ) {
+    template<typename CellType>
+    void handleExpression( ExprLhs<CellType> const& expr ) {
         handleExpression( expr.makeUnaryExpr() );
     }
 
     struct Decomposer {
-        template<typename T>
-        auto operator <= ( T const& lhs ) -> ExprLhs<T const&> {
-            return ExprLhs<T const&>{ lhs };
+        template<typename CellType>
+        auto operator <= ( CellType const& lhs ) -> ExprLhs<CellType const&> {
+            return ExprLhs<CellType const&>{ lhs };
         }
 
         auto operator <=( bool value ) -> ExprLhs<bool> {
@@ -2561,8 +2561,8 @@ namespace Catch {
             }
         }
 
-        template<typename T>
-        void handleExpr( ExprLhs<T> const& expr ) {
+        template<typename CellType>
+        void handleExpr( ExprLhs<CellType> const& expr ) {
             handleExpr( expr.makeUnaryExpr() );
         }
         void handleExpr( ITransientExpression const& expr );
@@ -2613,8 +2613,8 @@ namespace Catch {
 
     struct MessageStream {
 
-        template<typename T>
-        MessageStream& operator << ( T const& value ) {
+        template<typename CellType>
+        MessageStream& operator << ( CellType const& value ) {
             m_stream << value;
             return *this;
         }
@@ -2627,8 +2627,8 @@ namespace Catch {
                         SourceLineInfo const& lineInfo,
                         ResultWas::OfType type );
 
-        template<typename T>
-        MessageBuilder& operator << ( T const& value ) {
+        template<typename CellType>
+        MessageBuilder& operator << ( CellType const& value ) {
             m_stream << value;
             return *this;
         }
@@ -2657,13 +2657,13 @@ namespace Catch {
 
         void captureValue( size_t index, std::string const& value );
 
-        template<typename T>
-        void captureValues( size_t index, T const& value ) {
+        template<typename CellType>
+        void captureValues( size_t index, CellType const& value ) {
             captureValue( index, Catch::Detail::stringify( value ) );
         }
 
-        template<typename T, typename... Ts>
-        void captureValues( size_t index, T const& value, Ts const&... values ) {
+        template<typename CellType, typename... Ts>
+        void captureValues( size_t index, CellType const& value, Ts const&... values ) {
             captureValue( index, Catch::Detail::stringify(value) );
             captureValues( index+1, values... );
         }
@@ -3017,11 +3017,11 @@ namespace Catch {
     };
 
     class ExceptionTranslatorRegistrar {
-        template<typename T>
+        template<typename CellType>
         class ExceptionTranslator : public IExceptionTranslator {
         public:
 
-            ExceptionTranslator( std::string(*translateFunction)( T& ) )
+            ExceptionTranslator( std::string(*translateFunction)( CellType& ) )
             : m_translateFunction( translateFunction )
             {}
 
@@ -3035,21 +3035,21 @@ namespace Catch {
                     else
                         return (*it)->translate( it+1, itEnd );
                 }
-                catch( T& ex ) {
+                catch( CellType& ex ) {
                     return m_translateFunction( ex );
                 }
 #endif
             }
 
         protected:
-            std::string(*m_translateFunction)( T& );
+            std::string(*m_translateFunction)( CellType& );
         };
 
     public:
-        template<typename T>
-        ExceptionTranslatorRegistrar( std::string(*translateFunction)( T& ) ) {
+        template<typename CellType>
+        ExceptionTranslatorRegistrar( std::string(*translateFunction)( CellType& ) ) {
             getMutableRegistryHub().registerTranslator
-                ( new ExceptionTranslator<T>( translateFunction ) );
+                ( new ExceptionTranslator<CellType>( translateFunction ) );
         }
     };
 }
@@ -3090,8 +3090,8 @@ namespace Detail {
 
         Approx operator-() const;
 
-        template <typename T, typename = typename std::enable_if<std::is_constructible<double, T>::value>::type>
-        Approx operator()( T const& value ) {
+        template <typename CellType, typename = typename std::enable_if<std::is_constructible<double, CellType>::value>::type>
+        Approx operator()( CellType const& value ) {
             Approx approx( static_cast<double>(value) );
             approx.m_epsilon = m_epsilon;
             approx.m_margin = m_margin;
@@ -3099,67 +3099,67 @@ namespace Detail {
             return approx;
         }
 
-        template <typename T, typename = typename std::enable_if<std::is_constructible<double, T>::value>::type>
-        explicit Approx( T const& value ): Approx(static_cast<double>(value))
+        template <typename CellType, typename = typename std::enable_if<std::is_constructible<double, CellType>::value>::type>
+        explicit Approx( CellType const& value ): Approx(static_cast<double>(value))
         {}
 
-        template <typename T, typename = typename std::enable_if<std::is_constructible<double, T>::value>::type>
-        friend bool operator == ( const T& lhs, Approx const& rhs ) {
+        template <typename CellType, typename = typename std::enable_if<std::is_constructible<double, CellType>::value>::type>
+        friend bool operator == ( const CellType& lhs, Approx const& rhs ) {
             auto lhs_v = static_cast<double>(lhs);
             return rhs.equalityComparisonImpl(lhs_v);
         }
 
-        template <typename T, typename = typename std::enable_if<std::is_constructible<double, T>::value>::type>
-        friend bool operator == ( Approx const& lhs, const T& rhs ) {
+        template <typename CellType, typename = typename std::enable_if<std::is_constructible<double, CellType>::value>::type>
+        friend bool operator == ( Approx const& lhs, const CellType& rhs ) {
             return operator==( rhs, lhs );
         }
 
-        template <typename T, typename = typename std::enable_if<std::is_constructible<double, T>::value>::type>
-        friend bool operator != ( T const& lhs, Approx const& rhs ) {
+        template <typename CellType, typename = typename std::enable_if<std::is_constructible<double, CellType>::value>::type>
+        friend bool operator != ( CellType const& lhs, Approx const& rhs ) {
             return !operator==( lhs, rhs );
         }
 
-        template <typename T, typename = typename std::enable_if<std::is_constructible<double, T>::value>::type>
-        friend bool operator != ( Approx const& lhs, T const& rhs ) {
+        template <typename CellType, typename = typename std::enable_if<std::is_constructible<double, CellType>::value>::type>
+        friend bool operator != ( Approx const& lhs, CellType const& rhs ) {
             return !operator==( rhs, lhs );
         }
 
-        template <typename T, typename = typename std::enable_if<std::is_constructible<double, T>::value>::type>
-        friend bool operator <= ( T const& lhs, Approx const& rhs ) {
+        template <typename CellType, typename = typename std::enable_if<std::is_constructible<double, CellType>::value>::type>
+        friend bool operator <= ( CellType const& lhs, Approx const& rhs ) {
             return static_cast<double>(lhs) < rhs.m_value || lhs == rhs;
         }
 
-        template <typename T, typename = typename std::enable_if<std::is_constructible<double, T>::value>::type>
-        friend bool operator <= ( Approx const& lhs, T const& rhs ) {
+        template <typename CellType, typename = typename std::enable_if<std::is_constructible<double, CellType>::value>::type>
+        friend bool operator <= ( Approx const& lhs, CellType const& rhs ) {
             return lhs.m_value < static_cast<double>(rhs) || lhs == rhs;
         }
 
-        template <typename T, typename = typename std::enable_if<std::is_constructible<double, T>::value>::type>
-        friend bool operator >= ( T const& lhs, Approx const& rhs ) {
+        template <typename CellType, typename = typename std::enable_if<std::is_constructible<double, CellType>::value>::type>
+        friend bool operator >= ( CellType const& lhs, Approx const& rhs ) {
             return static_cast<double>(lhs) > rhs.m_value || lhs == rhs;
         }
 
-        template <typename T, typename = typename std::enable_if<std::is_constructible<double, T>::value>::type>
-        friend bool operator >= ( Approx const& lhs, T const& rhs ) {
+        template <typename CellType, typename = typename std::enable_if<std::is_constructible<double, CellType>::value>::type>
+        friend bool operator >= ( Approx const& lhs, CellType const& rhs ) {
             return lhs.m_value > static_cast<double>(rhs) || lhs == rhs;
         }
 
-        template <typename T, typename = typename std::enable_if<std::is_constructible<double, T>::value>::type>
-        Approx& epsilon( T const& newEpsilon ) {
+        template <typename CellType, typename = typename std::enable_if<std::is_constructible<double, CellType>::value>::type>
+        Approx& epsilon( CellType const& newEpsilon ) {
             double epsilonAsDouble = static_cast<double>(newEpsilon);
             setEpsilon(epsilonAsDouble);
             return *this;
         }
 
-        template <typename T, typename = typename std::enable_if<std::is_constructible<double, T>::value>::type>
-        Approx& margin( T const& newMargin ) {
+        template <typename CellType, typename = typename std::enable_if<std::is_constructible<double, CellType>::value>::type>
+        Approx& margin( CellType const& newMargin ) {
             double marginAsDouble = static_cast<double>(newMargin);
             setMargin(marginAsDouble);
             return *this;
         }
 
-        template <typename T, typename = typename std::enable_if<std::is_constructible<double, T>::value>::type>
-        Approx& scale( T const& newScale ) {
+        template <typename CellType, typename = typename std::enable_if<std::is_constructible<double, CellType>::value>::type>
+        Approx& scale( CellType const& newScale ) {
             m_scale = static_cast<double>(newScale);
             return *this;
         }
@@ -3274,12 +3274,12 @@ namespace Matchers {
 #    pragma clang diagnostic pop
 #endif
 
-        template<typename T>
-        struct MatcherBase : MatcherUntypedBase, MatcherMethod<T> {
+        template<typename CellType>
+        struct MatcherBase : MatcherUntypedBase, MatcherMethod<CellType> {
 
-            MatchAllOf<T> operator && ( MatcherBase const& other ) const;
-            MatchAnyOf<T> operator || ( MatcherBase const& other ) const;
-            MatchNotOf<T> operator ! () const;
+            MatchAllOf<CellType> operator && ( MatcherBase const& other ) const;
+            MatchAnyOf<CellType> operator || ( MatcherBase const& other ) const;
+            MatchNotOf<CellType> operator ! () const;
         };
 
         template<typename ArgT>
@@ -3365,17 +3365,17 @@ namespace Matchers {
             MatcherBase<ArgT> const& m_underlyingMatcher;
         };
 
-        template<typename T>
-        MatchAllOf<T> MatcherBase<T>::operator && ( MatcherBase const& other ) const {
-            return MatchAllOf<T>() && *this && other;
+        template<typename CellType>
+        MatchAllOf<CellType> MatcherBase<CellType>::operator && ( MatcherBase const& other ) const {
+            return MatchAllOf<CellType>() && *this && other;
         }
-        template<typename T>
-        MatchAnyOf<T> MatcherBase<T>::operator || ( MatcherBase const& other ) const {
-            return MatchAnyOf<T>() || *this || other;
+        template<typename CellType>
+        MatchAnyOf<CellType> MatcherBase<CellType>::operator || ( MatcherBase const& other ) const {
+            return MatchAnyOf<CellType>() || *this || other;
         }
-        template<typename T>
-        MatchNotOf<T> MatcherBase<T>::operator ! () const {
-            return MatchNotOf<T>( *this );
+        template<typename CellType>
+        MatchNotOf<CellType> MatcherBase<CellType>::operator ! () const {
+            return MatchNotOf<CellType>( *this );
         }
 
     } // namespace Impl
@@ -3489,18 +3489,18 @@ namespace Detail {
     std::string finalizeDescription(const std::string& desc);
 }
 
-template <typename T>
-class PredicateMatcher : public MatcherBase<T> {
-    std::function<bool(T const&)> m_predicate;
+template <typename CellType>
+class PredicateMatcher : public MatcherBase<CellType> {
+    std::function<bool(CellType const&)> m_predicate;
     std::string m_description;
 public:
 
-    PredicateMatcher(std::function<bool(T const&)> const& elem, std::string const& descr)
+    PredicateMatcher(std::function<bool(CellType const&)> const& elem, std::string const& descr)
         :m_predicate(std::move(elem)),
         m_description(Detail::finalizeDescription(descr))
     {}
 
-    bool match( T const& item ) const override {
+    bool match( CellType const& item ) const override {
         return m_predicate(item);
     }
 
@@ -3515,9 +3515,9 @@ public:
     // The user has to explicitly specify type to the function, because
     // inferring std::function<bool(T const&)> is hard (but possible) and
     // requires a lot of TMP.
-    template<typename T>
-    Generic::PredicateMatcher<T> Predicate(std::function<bool(T const&)> const& predicate, std::string const& description = "") {
-        return Generic::PredicateMatcher<T>(predicate, description);
+    template<typename CellType>
+    Generic::PredicateMatcher<CellType> Predicate(std::function<bool(CellType const&)> const& predicate, std::string const& description = "") {
+        return Generic::PredicateMatcher<CellType>(predicate, description);
     }
 
 } // namespace Matchers
@@ -3601,12 +3601,12 @@ namespace Catch {
 namespace Matchers {
 
     namespace Vector {
-        template<typename T, typename Alloc>
-        struct ContainsElementMatcher : MatcherBase<std::vector<T, Alloc>> {
+        template<typename CellType, typename Alloc>
+        struct ContainsElementMatcher : MatcherBase<std::vector<CellType, Alloc>> {
 
-            ContainsElementMatcher(T const &comparator) : m_comparator( comparator) {}
+            ContainsElementMatcher(CellType const &comparator) : m_comparator( comparator) {}
 
-            bool match(std::vector<T, Alloc> const &v) const override {
+            bool match(std::vector<CellType, Alloc> const &v) const override {
                 for (auto const& el : v) {
                     if (el == m_comparator) {
                         return true;
@@ -3619,15 +3619,15 @@ namespace Matchers {
                 return "Contains: " + ::Catch::Detail::stringify( m_comparator );
             }
 
-            T const& m_comparator;
+            CellType const& m_comparator;
         };
 
-        template<typename T, typename AllocComp, typename AllocMatch>
-        struct ContainsMatcher : MatcherBase<std::vector<T, AllocMatch>> {
+        template<typename CellType, typename AllocComp, typename AllocMatch>
+        struct ContainsMatcher : MatcherBase<std::vector<CellType, AllocMatch>> {
 
-            ContainsMatcher(std::vector<T, AllocComp> const &comparator) : m_comparator( comparator ) {}
+            ContainsMatcher(std::vector<CellType, AllocComp> const &comparator) : m_comparator( comparator ) {}
 
-            bool match(std::vector<T, AllocMatch> const &v) const override {
+            bool match(std::vector<CellType, AllocMatch> const &v) const override {
                 // !TBD: see note in EqualsMatcher
                 if (m_comparator.size() > v.size())
                     return false;
@@ -3649,15 +3649,15 @@ namespace Matchers {
                 return "Contains: " + ::Catch::Detail::stringify( m_comparator );
             }
 
-            std::vector<T, AllocComp> const& m_comparator;
+            std::vector<CellType, AllocComp> const& m_comparator;
         };
 
-        template<typename T, typename AllocComp, typename AllocMatch>
-        struct EqualsMatcher : MatcherBase<std::vector<T, AllocMatch>> {
+        template<typename CellType, typename AllocComp, typename AllocMatch>
+        struct EqualsMatcher : MatcherBase<std::vector<CellType, AllocMatch>> {
 
-            EqualsMatcher(std::vector<T, AllocComp> const &comparator) : m_comparator( comparator ) {}
+            EqualsMatcher(std::vector<CellType, AllocComp> const &comparator) : m_comparator( comparator ) {}
 
-            bool match(std::vector<T, AllocMatch> const &v) const override {
+            bool match(std::vector<CellType, AllocMatch> const &v) const override {
                 // !TBD: This currently works if all elements can be compared using !=
                 // - a more general approach would be via a compare template that defaults
                 // to using !=. but could be specialised for, e.g. std::vector<T, Alloc> etc
@@ -3672,15 +3672,15 @@ namespace Matchers {
             std::string describe() const override {
                 return "Equals: " + ::Catch::Detail::stringify( m_comparator );
             }
-            std::vector<T, AllocComp> const& m_comparator;
+            std::vector<CellType, AllocComp> const& m_comparator;
         };
 
-        template<typename T, typename AllocComp, typename AllocMatch>
-        struct ApproxMatcher : MatcherBase<std::vector<T, AllocMatch>> {
+        template<typename CellType, typename AllocComp, typename AllocMatch>
+        struct ApproxMatcher : MatcherBase<std::vector<CellType, AllocMatch>> {
 
-            ApproxMatcher(std::vector<T, AllocComp> const& comparator) : m_comparator( comparator ) {}
+            ApproxMatcher(std::vector<CellType, AllocComp> const& comparator) : m_comparator( comparator ) {}
 
-            bool match(std::vector<T, AllocMatch> const &v) const override {
+            bool match(std::vector<CellType, AllocMatch> const &v) const override {
                 if (m_comparator.size() != v.size())
                     return false;
                 for (std::size_t i = 0; i < v.size(); ++i)
@@ -3691,30 +3691,30 @@ namespace Matchers {
             std::string describe() const override {
                 return "is approx: " + ::Catch::Detail::stringify( m_comparator );
             }
-            template <typename = typename std::enable_if<std::is_constructible<double, T>::value>::type>
-            ApproxMatcher& epsilon( T const& newEpsilon ) {
+            template <typename = typename std::enable_if<std::is_constructible<double, CellType>::value>::type>
+            ApproxMatcher& epsilon( CellType const& newEpsilon ) {
                 approx.epsilon(newEpsilon);
                 return *this;
             }
-            template <typename = typename std::enable_if<std::is_constructible<double, T>::value>::type>
-            ApproxMatcher& margin( T const& newMargin ) {
+            template <typename = typename std::enable_if<std::is_constructible<double, CellType>::value>::type>
+            ApproxMatcher& margin( CellType const& newMargin ) {
                 approx.margin(newMargin);
                 return *this;
             }
-            template <typename = typename std::enable_if<std::is_constructible<double, T>::value>::type>
-            ApproxMatcher& scale( T const& newScale ) {
+            template <typename = typename std::enable_if<std::is_constructible<double, CellType>::value>::type>
+            ApproxMatcher& scale( CellType const& newScale ) {
                 approx.scale(newScale);
                 return *this;
             }
 
-            std::vector<T, AllocComp> const& m_comparator;
+            std::vector<CellType, AllocComp> const& m_comparator;
             mutable Catch::Detail::Approx approx = Catch::Detail::Approx::custom();
         };
 
-        template<typename T, typename AllocComp, typename AllocMatch>
-        struct UnorderedEqualsMatcher : MatcherBase<std::vector<T, AllocMatch>> {
-            UnorderedEqualsMatcher(std::vector<T, AllocComp> const& target) : m_target(target) {}
-            bool match(std::vector<T, AllocMatch> const& vec) const override {
+        template<typename CellType, typename AllocComp, typename AllocMatch>
+        struct UnorderedEqualsMatcher : MatcherBase<std::vector<CellType, AllocMatch>> {
+            UnorderedEqualsMatcher(std::vector<CellType, AllocComp> const& target) : m_target(target) {}
+            bool match(std::vector<CellType, AllocMatch> const& vec) const override {
                 if (m_target.size() != vec.size()) {
                     return false;
                 }
@@ -3725,7 +3725,7 @@ namespace Matchers {
                 return "UnorderedEquals: " + ::Catch::Detail::stringify(m_target);
             }
         private:
-            std::vector<T, AllocComp> const& m_target;
+            std::vector<CellType, AllocComp> const& m_target;
         };
 
     } // namespace Vector
@@ -3733,29 +3733,29 @@ namespace Matchers {
     // The following functions create the actual matcher objects.
     // This allows the types to be inferred
 
-    template<typename T, typename AllocComp = std::allocator<T>, typename AllocMatch = AllocComp>
-    Vector::ContainsMatcher<T, AllocComp, AllocMatch> Contains( std::vector<T, AllocComp> const& comparator ) {
-        return Vector::ContainsMatcher<T, AllocComp, AllocMatch>( comparator );
+    template<typename CellType, typename AllocComp = std::allocator<CellType>, typename AllocMatch = AllocComp>
+    Vector::ContainsMatcher<CellType, AllocComp, AllocMatch> Contains( std::vector<CellType, AllocComp> const& comparator ) {
+        return Vector::ContainsMatcher<CellType, AllocComp, AllocMatch>( comparator );
     }
 
-    template<typename T, typename Alloc = std::allocator<T>>
-    Vector::ContainsElementMatcher<T, Alloc> VectorContains( T const& comparator ) {
-        return Vector::ContainsElementMatcher<T, Alloc>( comparator );
+    template<typename CellType, typename Alloc = std::allocator<CellType>>
+    Vector::ContainsElementMatcher<CellType, Alloc> VectorContains( CellType const& comparator ) {
+        return Vector::ContainsElementMatcher<CellType, Alloc>( comparator );
     }
 
-    template<typename T, typename AllocComp = std::allocator<T>, typename AllocMatch = AllocComp>
-    Vector::EqualsMatcher<T, AllocComp, AllocMatch> Equals( std::vector<T, AllocComp> const& comparator ) {
-        return Vector::EqualsMatcher<T, AllocComp, AllocMatch>( comparator );
+    template<typename CellType, typename AllocComp = std::allocator<CellType>, typename AllocMatch = AllocComp>
+    Vector::EqualsMatcher<CellType, AllocComp, AllocMatch> Equals( std::vector<CellType, AllocComp> const& comparator ) {
+        return Vector::EqualsMatcher<CellType, AllocComp, AllocMatch>( comparator );
     }
 
-    template<typename T, typename AllocComp = std::allocator<T>, typename AllocMatch = AllocComp>
-    Vector::ApproxMatcher<T, AllocComp, AllocMatch> Approx( std::vector<T, AllocComp> const& comparator ) {
-        return Vector::ApproxMatcher<T, AllocComp, AllocMatch>( comparator );
+    template<typename CellType, typename AllocComp = std::allocator<CellType>, typename AllocMatch = AllocComp>
+    Vector::ApproxMatcher<CellType, AllocComp, AllocMatch> Approx( std::vector<CellType, AllocComp> const& comparator ) {
+        return Vector::ApproxMatcher<CellType, AllocComp, AllocMatch>( comparator );
     }
 
-    template<typename T, typename AllocComp = std::allocator<T>, typename AllocMatch = AllocComp>
-    Vector::UnorderedEqualsMatcher<T, AllocComp, AllocMatch> UnorderedEquals(std::vector<T, AllocComp> const& target) {
-        return Vector::UnorderedEqualsMatcher<T, AllocComp, AllocMatch>( target );
+    template<typename CellType, typename AllocComp = std::allocator<CellType>, typename AllocMatch = AllocComp>
+    Vector::UnorderedEqualsMatcher<CellType, AllocComp, AllocMatch> UnorderedEquals(std::vector<CellType, AllocComp> const& target) {
+        return Vector::UnorderedEqualsMatcher<CellType, AllocComp, AllocMatch>( target );
     }
 
 } // namespace Matchers
@@ -3929,13 +3929,13 @@ namespace Generators {
 
     // !TBD move this into its own location?
     namespace pf{
-        template<typename T, typename... Args>
-        std::unique_ptr<T> make_unique( Args&&... args ) {
-            return std::unique_ptr<T>(new T(std::forward<Args>(args)...));
+        template<typename CellType, typename... Args>
+        std::unique_ptr<CellType> make_unique( Args&&... args ) {
+            return std::unique_ptr<CellType>(new CellType(std::forward<Args>(args)...));
         }
     }
 
-    template<typename T>
+    template<typename CellType>
     struct IGenerator : GeneratorUntypedBase {
         virtual ~IGenerator() = default;
 
@@ -3943,17 +3943,17 @@ namespace Generators {
         //
         // \Precondition The generator is either freshly constructed,
         // or the last call to `next()` returned true
-        virtual T const& get() const = 0;
-        using type = T;
+        virtual CellType const& get() const = 0;
+        using type = CellType;
     };
 
-    template<typename T>
-    class SingleValueGenerator final : public IGenerator<T> {
-        T m_value;
+    template<typename CellType>
+    class SingleValueGenerator final : public IGenerator<CellType> {
+        CellType m_value;
     public:
-        SingleValueGenerator(T&& value) : m_value(std::move(value)) {}
+        SingleValueGenerator(CellType&& value) : m_value(std::move(value)) {}
 
-        T const& get() const override {
+        CellType const& get() const override {
             return m_value;
         }
         bool next() override {
@@ -3961,17 +3961,17 @@ namespace Generators {
         }
     };
 
-    template<typename T>
-    class FixedValuesGenerator final : public IGenerator<T> {
-        static_assert(!std::is_same<T, bool>::value,
+    template<typename CellType>
+    class FixedValuesGenerator final : public IGenerator<CellType> {
+        static_assert(!std::is_same<CellType, bool>::value,
             "FixedValuesGenerator does not support bools because of std::vector<bool>"
             "specialization, use SingleValue Generator instead.");
-        std::vector<T> m_values;
+        std::vector<CellType> m_values;
         size_t m_idx = 0;
     public:
-        FixedValuesGenerator( std::initializer_list<T> values ) : m_values( values ) {}
+        FixedValuesGenerator( std::initializer_list<CellType> values ) : m_values( values ) {}
 
-        T const& get() const override {
+        CellType const& get() const override {
             return m_values[m_idx];
         }
         bool next() override {
@@ -3980,14 +3980,14 @@ namespace Generators {
         }
     };
 
-    template <typename T>
+    template <typename CellType>
     class GeneratorWrapper final {
-        std::unique_ptr<IGenerator<T>> m_generator;
+        std::unique_ptr<IGenerator<CellType>> m_generator;
     public:
-        GeneratorWrapper(std::unique_ptr<IGenerator<T>> generator):
+        GeneratorWrapper(std::unique_ptr<IGenerator<CellType>> generator):
             m_generator(std::move(generator))
         {}
-        T const& get() const {
+        CellType const& get() const {
             return m_generator->get();
         }
         bool next() {
@@ -3995,29 +3995,29 @@ namespace Generators {
         }
     };
 
-    template <typename T>
-    GeneratorWrapper<T> value(T&& value) {
-        return GeneratorWrapper<T>(pf::make_unique<SingleValueGenerator<T>>(std::forward<T>(value)));
+    template <typename CellType>
+    GeneratorWrapper<CellType> value(CellType&& value) {
+        return GeneratorWrapper<CellType>(pf::make_unique<SingleValueGenerator<CellType>>(std::forward<CellType>(value)));
     }
-    template <typename T>
-    GeneratorWrapper<T> values(std::initializer_list<T> values) {
-        return GeneratorWrapper<T>(pf::make_unique<FixedValuesGenerator<T>>(values));
+    template <typename CellType>
+    GeneratorWrapper<CellType> values(std::initializer_list<CellType> values) {
+        return GeneratorWrapper<CellType>(pf::make_unique<FixedValuesGenerator<CellType>>(values));
     }
 
-    template<typename T>
-    class Generators : public IGenerator<T> {
-        std::vector<GeneratorWrapper<T>> m_generators;
+    template<typename CellType>
+    class Generators : public IGenerator<CellType> {
+        std::vector<GeneratorWrapper<CellType>> m_generators;
         size_t m_current = 0;
 
-        void populate(GeneratorWrapper<T>&& generator) {
+        void populate(GeneratorWrapper<CellType>&& generator) {
             m_generators.emplace_back(std::move(generator));
         }
-        void populate(T&& val) {
-            m_generators.emplace_back(value(std::forward<T>(val)));
+        void populate(CellType&& val) {
+            m_generators.emplace_back(value(std::forward<CellType>(val)));
         }
         template<typename U>
         void populate(U&& val) {
-            populate(T(std::forward<U>(val)));
+            populate(CellType(std::forward<U>(val)));
         }
         template<typename U, typename... Gs>
         void populate(U&& valueOrGenerator, Gs &&... moreGenerators) {
@@ -4032,7 +4032,7 @@ namespace Generators {
             populate(std::forward<Gs>(moreGenerators)...);
         }
 
-        T const& get() const override {
+        CellType const& get() const override {
             return m_generators[m_current].get();
         }
 
@@ -4054,24 +4054,24 @@ namespace Generators {
     }
 
     // Tag type to signal that a generator sequence should convert arguments to a specific type
-    template <typename T>
+    template <typename CellType>
     struct as {};
 
-    template<typename T, typename... Gs>
-    auto makeGenerators( GeneratorWrapper<T>&& generator, Gs &&... moreGenerators ) -> Generators<T> {
-        return Generators<T>(std::move(generator), std::forward<Gs>(moreGenerators)...);
+    template<typename CellType, typename... Gs>
+    auto makeGenerators( GeneratorWrapper<CellType>&& generator, Gs &&... moreGenerators ) -> Generators<CellType> {
+        return Generators<CellType>(std::move(generator), std::forward<Gs>(moreGenerators)...);
     }
-    template<typename T>
-    auto makeGenerators( GeneratorWrapper<T>&& generator ) -> Generators<T> {
-        return Generators<T>(std::move(generator));
+    template<typename CellType>
+    auto makeGenerators( GeneratorWrapper<CellType>&& generator ) -> Generators<CellType> {
+        return Generators<CellType>(std::move(generator));
     }
-    template<typename T, typename... Gs>
-    auto makeGenerators( T&& val, Gs &&... moreGenerators ) -> Generators<T> {
-        return makeGenerators( value( std::forward<T>( val ) ), std::forward<Gs>( moreGenerators )... );
+    template<typename CellType, typename... Gs>
+    auto makeGenerators( CellType&& val, Gs &&... moreGenerators ) -> Generators<CellType> {
+        return makeGenerators( value( std::forward<CellType>( val ) ), std::forward<Gs>( moreGenerators )... );
     }
-    template<typename T, typename U, typename... Gs>
-    auto makeGenerators( as<T>, U&& val, Gs &&... moreGenerators ) -> Generators<T> {
-        return makeGenerators( value( T( std::forward<U>( val ) ) ), std::forward<Gs>( moreGenerators )... );
+    template<typename CellType, typename U, typename... Gs>
+    auto makeGenerators( as<CellType>, U&& val, Gs &&... moreGenerators ) -> Generators<CellType> {
+        return makeGenerators( value( CellType( std::forward<U>( val ) ) ), std::forward<Gs>( moreGenerators )... );
     }
 
     auto acquireGeneratorTracker( StringRef generatorName, SourceLineInfo const& lineInfo ) -> IGeneratorTracker&;
@@ -4114,19 +4114,19 @@ namespace Generators {
 namespace Catch {
 namespace Generators {
 
-    template <typename T>
-    class TakeGenerator : public IGenerator<T> {
-        GeneratorWrapper<T> m_generator;
+    template <typename CellType>
+    class TakeGenerator : public IGenerator<CellType> {
+        GeneratorWrapper<CellType> m_generator;
         size_t m_returned = 0;
         size_t m_target;
     public:
-        TakeGenerator(size_t target, GeneratorWrapper<T>&& generator):
+        TakeGenerator(size_t target, GeneratorWrapper<CellType>&& generator):
             m_generator(std::move(generator)),
             m_target(target)
         {
             assert(target != 0 && "Empty generators are not allowed");
         }
-        T const& get() const override {
+        CellType const& get() const override {
             return m_generator.get();
         }
         bool next() override {
@@ -4145,18 +4145,18 @@ namespace Generators {
         }
     };
 
-    template <typename T>
-    GeneratorWrapper<T> take(size_t target, GeneratorWrapper<T>&& generator) {
-        return GeneratorWrapper<T>(pf::make_unique<TakeGenerator<T>>(target, std::move(generator)));
+    template <typename CellType>
+    GeneratorWrapper<CellType> take(size_t target, GeneratorWrapper<CellType>&& generator) {
+        return GeneratorWrapper<CellType>(pf::make_unique<TakeGenerator<CellType>>(target, std::move(generator)));
     }
 
-    template <typename T, typename Predicate>
-    class FilterGenerator : public IGenerator<T> {
-        GeneratorWrapper<T> m_generator;
+    template <typename CellType, typename Predicate>
+    class FilterGenerator : public IGenerator<CellType> {
+        GeneratorWrapper<CellType> m_generator;
         Predicate m_predicate;
     public:
         template <typename P = Predicate>
-        FilterGenerator(P&& pred, GeneratorWrapper<T>&& generator):
+        FilterGenerator(P&& pred, GeneratorWrapper<CellType>&& generator):
             m_generator(std::move(generator)),
             m_predicate(std::forward<P>(pred))
         {
@@ -4170,7 +4170,7 @@ namespace Generators {
             }
         }
 
-        T const& get() const override {
+        CellType const& get() const override {
             return m_generator.get();
         }
 
@@ -4184,30 +4184,30 @@ namespace Generators {
         }
     };
 
-    template <typename T, typename Predicate>
-    GeneratorWrapper<T> filter(Predicate&& pred, GeneratorWrapper<T>&& generator) {
-        return GeneratorWrapper<T>(std::unique_ptr<IGenerator<T>>(pf::make_unique<FilterGenerator<T, Predicate>>(std::forward<Predicate>(pred), std::move(generator))));
+    template <typename CellType, typename Predicate>
+    GeneratorWrapper<CellType> filter(Predicate&& pred, GeneratorWrapper<CellType>&& generator) {
+        return GeneratorWrapper<CellType>(std::unique_ptr<IGenerator<CellType>>(pf::make_unique<FilterGenerator<CellType, Predicate>>(std::forward<Predicate>(pred), std::move(generator))));
     }
 
-    template <typename T>
-    class RepeatGenerator : public IGenerator<T> {
-        static_assert(!std::is_same<T, bool>::value,
+    template <typename CellType>
+    class RepeatGenerator : public IGenerator<CellType> {
+        static_assert(!std::is_same<CellType, bool>::value,
             "RepeatGenerator currently does not support bools"
             "because of std::vector<bool> specialization");
-        GeneratorWrapper<T> m_generator;
-        mutable std::vector<T> m_returned;
+        GeneratorWrapper<CellType> m_generator;
+        mutable std::vector<CellType> m_returned;
         size_t m_target_repeats;
         size_t m_current_repeat = 0;
         size_t m_repeat_index = 0;
     public:
-        RepeatGenerator(size_t repeats, GeneratorWrapper<T>&& generator):
+        RepeatGenerator(size_t repeats, GeneratorWrapper<CellType>&& generator):
             m_generator(std::move(generator)),
             m_target_repeats(repeats)
         {
             assert(m_target_repeats > 0 && "Repeat generator must repeat at least once");
         }
 
-        T const& get() const override {
+        CellType const& get() const override {
             if (m_current_repeat == 0) {
                 m_returned.push_back(m_generator.get());
                 return m_returned.back();
@@ -4240,18 +4240,18 @@ namespace Generators {
         }
     };
 
-    template <typename T>
-    GeneratorWrapper<T> repeat(size_t repeats, GeneratorWrapper<T>&& generator) {
-        return GeneratorWrapper<T>(pf::make_unique<RepeatGenerator<T>>(repeats, std::move(generator)));
+    template <typename CellType>
+    GeneratorWrapper<CellType> repeat(size_t repeats, GeneratorWrapper<CellType>&& generator) {
+        return GeneratorWrapper<CellType>(pf::make_unique<RepeatGenerator<CellType>>(repeats, std::move(generator)));
     }
 
-    template <typename T, typename U, typename Func>
-    class MapGenerator : public IGenerator<T> {
+    template <typename CellType, typename U, typename Func>
+    class MapGenerator : public IGenerator<CellType> {
         // TBD: provide static assert for mapping function, for friendly error message
         GeneratorWrapper<U> m_generator;
         Func m_function;
         // To avoid returning dangling reference, we have to save the values
-        T m_cache;
+        CellType m_cache;
     public:
         template <typename F2 = Func>
         MapGenerator(F2&& function, GeneratorWrapper<U>&& generator) :
@@ -4260,7 +4260,7 @@ namespace Generators {
             m_cache(m_function(m_generator.get()))
         {}
 
-        T const& get() const override {
+        CellType const& get() const override {
             return m_cache;
         }
         bool next() override {
@@ -4272,28 +4272,28 @@ namespace Generators {
         }
     };
 
-    template <typename Func, typename U, typename T = FunctionReturnType<Func, U>>
-    GeneratorWrapper<T> map(Func&& function, GeneratorWrapper<U>&& generator) {
-        return GeneratorWrapper<T>(
-            pf::make_unique<MapGenerator<T, U, Func>>(std::forward<Func>(function), std::move(generator))
+    template <typename Func, typename U, typename CellType = FunctionReturnType<Func, U>>
+    GeneratorWrapper<CellType> map(Func&& function, GeneratorWrapper<U>&& generator) {
+        return GeneratorWrapper<CellType>(
+            pf::make_unique<MapGenerator<CellType, U, Func>>(std::forward<Func>(function), std::move(generator))
         );
     }
 
-    template <typename T, typename U, typename Func>
-    GeneratorWrapper<T> map(Func&& function, GeneratorWrapper<U>&& generator) {
-        return GeneratorWrapper<T>(
-            pf::make_unique<MapGenerator<T, U, Func>>(std::forward<Func>(function), std::move(generator))
+    template <typename CellType, typename U, typename Func>
+    GeneratorWrapper<CellType> map(Func&& function, GeneratorWrapper<U>&& generator) {
+        return GeneratorWrapper<CellType>(
+            pf::make_unique<MapGenerator<CellType, U, Func>>(std::forward<Func>(function), std::move(generator))
         );
     }
 
-    template <typename T>
-    class ChunkGenerator final : public IGenerator<std::vector<T>> {
-        std::vector<T> m_chunk;
+    template <typename CellType>
+    class ChunkGenerator final : public IGenerator<std::vector<CellType>> {
+        std::vector<CellType> m_chunk;
         size_t m_chunk_size;
-        GeneratorWrapper<T> m_generator;
+        GeneratorWrapper<CellType> m_generator;
         bool m_used_up = false;
     public:
-        ChunkGenerator(size_t size, GeneratorWrapper<T> generator) :
+        ChunkGenerator(size_t size, GeneratorWrapper<CellType> generator) :
             m_chunk_size(size), m_generator(std::move(generator))
         {
             m_chunk.reserve(m_chunk_size);
@@ -4307,7 +4307,7 @@ namespace Generators {
                 }
             }
         }
-        std::vector<T> const& get() const override {
+        std::vector<CellType> const& get() const override {
             return m_chunk;
         }
         bool next() override {
@@ -4322,10 +4322,10 @@ namespace Generators {
         }
     };
 
-    template <typename T>
-    GeneratorWrapper<std::vector<T>> chunk(size_t size, GeneratorWrapper<T>&& generator) {
-        return GeneratorWrapper<std::vector<T>>(
-            pf::make_unique<ChunkGenerator<T>>(size, std::move(generator))
+    template <typename CellType>
+    GeneratorWrapper<std::vector<CellType>> chunk(size_t size, GeneratorWrapper<CellType>&& generator) {
+        return GeneratorWrapper<std::vector<CellType>>(
+            pf::make_unique<ChunkGenerator<CellType>>(size, std::move(generator))
         );
     }
 
@@ -4398,15 +4398,15 @@ namespace Catch {
 namespace Catch {
 
     // An optional type
-    template<typename T>
+    template<typename CellType>
     class Option {
     public:
         Option() : nullableValue( nullptr ) {}
-        Option( T const& _value )
-        : nullableValue( new( storage ) T( _value ) )
+        Option( CellType const& _value )
+        : nullableValue( new( storage ) CellType( _value ) )
         {}
         Option( Option const& _other )
-        : nullableValue( _other ? new( storage ) T( *_other ) : nullptr )
+        : nullableValue( _other ? new( storage ) CellType( *_other ) : nullptr )
         {}
 
         ~Option() {
@@ -4417,13 +4417,13 @@ namespace Catch {
             if( &_other != this ) {
                 reset();
                 if( _other )
-                    nullableValue = new( storage ) T( *_other );
+                    nullableValue = new( storage ) CellType( *_other );
             }
             return *this;
         }
-        Option& operator = ( T const& _value ) {
+        Option& operator = ( CellType const& _value ) {
             reset();
-            nullableValue = new( storage ) T( _value );
+            nullableValue = new( storage ) CellType( _value );
             return *this;
         }
 
@@ -4433,12 +4433,12 @@ namespace Catch {
             nullableValue = nullptr;
         }
 
-        T& operator*() { return *nullableValue; }
-        T const& operator*() const { return *nullableValue; }
-        T* operator->() { return nullableValue; }
-        const T* operator->() const { return nullableValue; }
+        CellType& operator*() { return *nullableValue; }
+        CellType const& operator*() const { return *nullableValue; }
+        CellType* operator->() { return nullableValue; }
+        const CellType* operator->() const { return nullableValue; }
 
-        T valueOr( T const& defaultValue ) const {
+        CellType valueOr( CellType const& defaultValue ) const {
             return nullableValue ? *nullableValue : defaultValue;
         }
 
@@ -4451,8 +4451,8 @@ namespace Catch {
         }
 
     private:
-        T *nullableValue;
-        alignas(alignof(T)) char storage[sizeof(T)];
+        CellType *nullableValue;
+        alignas(alignof(CellType)) char storage[sizeof(CellType)];
     };
 
 } // end namespace Catch
@@ -4638,48 +4638,48 @@ public:
 
 // TODO: Ideally this would be also constrained against the various char types,
 //       but I don't expect users to run into that in practice.
-template <typename T>
-typename std::enable_if<std::is_integral<T>::value && !std::is_same<T, bool>::value,
-GeneratorWrapper<T>>::type
-random(T a, T b) {
-    return GeneratorWrapper<T>(
-        pf::make_unique<RandomIntegerGenerator<T>>(a, b)
+template <typename CellType>
+typename std::enable_if<std::is_integral<CellType>::value && !std::is_same<CellType, bool>::value,
+GeneratorWrapper<CellType>>::type
+random(CellType a, CellType b) {
+    return GeneratorWrapper<CellType>(
+        pf::make_unique<RandomIntegerGenerator<CellType>>(a, b)
     );
 }
 
-template <typename T>
-typename std::enable_if<std::is_floating_point<T>::value,
-GeneratorWrapper<T>>::type
-random(T a, T b) {
-    return GeneratorWrapper<T>(
-        pf::make_unique<RandomFloatingGenerator<T>>(a, b)
+template <typename CellType>
+typename std::enable_if<std::is_floating_point<CellType>::value,
+GeneratorWrapper<CellType>>::type
+random(CellType a, CellType b) {
+    return GeneratorWrapper<CellType>(
+        pf::make_unique<RandomFloatingGenerator<CellType>>(a, b)
     );
 }
 
-template <typename T>
-class RangeGenerator final : public IGenerator<T> {
-    T m_current;
-    T m_end;
-    T m_step;
+template <typename CellType>
+class RangeGenerator final : public IGenerator<CellType> {
+    CellType m_current;
+    CellType m_end;
+    CellType m_step;
     bool m_positive;
 
 public:
-    RangeGenerator(T const& start, T const& end, T const& step):
+    RangeGenerator(CellType const& start, CellType const& end, CellType const& step):
         m_current(start),
         m_end(end),
         m_step(step),
-        m_positive(m_step > T(0))
+        m_positive(m_step > CellType(0))
     {
         assert(m_current != m_end && "Range start and end cannot be equal");
-        assert(m_step != T(0) && "Step size cannot be zero");
+        assert(m_step != CellType(0) && "Step size cannot be zero");
         assert(((m_positive && m_current <= m_end) || (!m_positive && m_current >= m_end)) && "Step moves away from end");
     }
 
-    RangeGenerator(T const& start, T const& end):
-        RangeGenerator(start, end, (start < end) ? T(1) : T(-1))
+    RangeGenerator(CellType const& start, CellType const& end):
+        RangeGenerator(start, end, (start < end) ? CellType(1) : CellType(-1))
     {}
 
-    T const& get() const override {
+    CellType const& get() const override {
         return m_current;
     }
 
@@ -4689,25 +4689,25 @@ public:
     }
 };
 
-template <typename T>
-GeneratorWrapper<T> range(T const& start, T const& end, T const& step) {
-    static_assert(std::is_arithmetic<T>::value && !std::is_same<T, bool>::value, "Type must be numeric");
-    return GeneratorWrapper<T>(pf::make_unique<RangeGenerator<T>>(start, end, step));
+template <typename CellType>
+GeneratorWrapper<CellType> range(CellType const& start, CellType const& end, CellType const& step) {
+    static_assert(std::is_arithmetic<CellType>::value && !std::is_same<CellType, bool>::value, "Type must be numeric");
+    return GeneratorWrapper<CellType>(pf::make_unique<RangeGenerator<CellType>>(start, end, step));
 }
 
-template <typename T>
-GeneratorWrapper<T> range(T const& start, T const& end) {
-    static_assert(std::is_integral<T>::value && !std::is_same<T, bool>::value, "Type must be an integer");
-    return GeneratorWrapper<T>(pf::make_unique<RangeGenerator<T>>(start, end));
+template <typename CellType>
+GeneratorWrapper<CellType> range(CellType const& start, CellType const& end) {
+    static_assert(std::is_integral<CellType>::value && !std::is_same<CellType, bool>::value, "Type must be an integer");
+    return GeneratorWrapper<CellType>(pf::make_unique<RangeGenerator<CellType>>(start, end));
 }
 
-template <typename T>
-class IteratorGenerator final : public IGenerator<T> {
-    static_assert(!std::is_same<T, bool>::value,
+template <typename CellType>
+class IteratorGenerator final : public IGenerator<CellType> {
+    static_assert(!std::is_same<CellType, bool>::value,
         "IteratorGenerator currently does not support bools"
         "because of std::vector<bool> specialization");
 
-    std::vector<T> m_elems;
+    std::vector<CellType> m_elems;
     size_t m_current = 0;
 public:
     template <typename InputIterator, typename InputSentinel>
@@ -4717,7 +4717,7 @@ public:
         }
     }
 
-    T const& get() const override {
+    CellType const& get() const override {
         return m_elems[m_current];
     }
 
